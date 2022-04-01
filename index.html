@@ -1,0 +1,496 @@
+<html>
+    <head>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.2.8/d3.min.js" type="text/JavaScript"></script>
+        <script src="https://d3js.org/colorbrewer.v1.min.js"></script>
+        <script src="https://d3js.org/d3-geo-projection.v1.min.js"></script>
+
+        <title>Project</title>
+    </head>
+    <body>
+        <svg style="width:2100px; height:900px"></svg>
+        <script>
+            Americas()
+            function createBarPlot(d){   
+                d3.select("#xAxisG").remove()
+
+                var xScale = d3.scaleLinear()
+                    .range([0,700])
+                    .domain([0,350000])
+
+                var xAxis = d3.axisBottom().scale(xScale)
+                d3.select("svg").append("g")
+                    .attr("id","xAxisG").call(xAxis)
+                    .attr("transform","translate(1170,550)")
+                
+                placeBars()
+
+                //Function to place all bars
+                function placeBars(){
+                    d3.select("#txt").remove()
+                    var data = [10,30,30,d.properties.data.previousCases,d.properties.data.currentCases]
+
+                    d3.select("svg")
+                        .selectAll("rect")
+                        .data(data)
+                        .enter()
+                        .append("g")
+                        .append("rect")
+                            .attr("id","bars")
+                            .attr("height", 17)
+                            .attr("width", (d,i)=>xScale(d))
+                            .attr("x", 1170)
+                            .attr("y",(d,i)=>(13.55+i)*30)
+                            .style("fill","pink")
+
+                    var variable = d3.select("svg")
+                        .selectAll("spots")
+                        .data(["# of Cases Last Week", "# of Cases This Week"])
+                        .enter()
+                        .append("text")
+                            .attr("id", "txt")
+                            .text((d,i)=>d)
+                            .attr("x",1020)
+                            .attr("y",(d,i)=>(17+i)*30)
+                    
+                }
+                
+            }
+            function remove(){
+                d3.select("svg").select("#bars").remove
+            }
+            //Displays both North and South America
+            function Americas(){
+                d3.select("svg").selectAll("*").remove()//removes all elements from svg
+                var PromiseWrapper = (xhr, d) => new Promise(resolve => xhr(d, (p) => resolve(p)));
+
+                Promise
+                    .all([
+                        PromiseWrapper(d3.json,"NASA.geojson"),
+                        PromiseWrapper(d3.csv,"nasa.csv")
+                    ])
+                    .then(resolve=>{
+                        createMap(resolve[0],resolve[1]);
+                    });
+                    function createMap(countries, nasaData){
+                    var Projection = d3.geoMercator()
+                        .scale(200)
+                        .translate([700,600])
+                    
+                    var geoPath = d3.geoPath().projection(Projection)
+ 
+                    var variable = d3.select("svg")
+                        .selectAll("spots")
+                        .data(["# of cases has decreased","# of cases has increased", "# of cases is the same"])
+                        .enter()
+                        .append("g")
+                    
+                    variable.append("text")
+                        .text((d,i)=>d)
+                        .attr("x",50)
+                        .attr("y",(d,i)=>(1+i)*20)
+
+                    variable.append("rect")
+                        .attr("x", 30)
+                        .attr("y", (d,i)=>(0.5+i)*20)
+                        .attr("width", 10)
+                        .attr("height",10)
+                        .style("fill",(d,i)=>{
+                            if(i == 0) return "#00ff62"
+                            else if(i == 1) return "#0059ff"
+                            else return "#ff0000"
+                        })
+                        .style("stroke","black")
+
+                    const parts = countries.features
+                    parts.forEach(geoJsonObject => {
+                        const linkedData = nasaData.find(d => d.country === geoJsonObject.properties.name)
+                        geoJsonObject.properties.data = linkedData
+                    })
+                    d3.select("svg").selectAll("path").data(parts)
+                        .enter()
+                        .append("path")
+                            .attr("d", geoPath)
+                            .attr("class", "countries")
+                            .style("fill", function(d){
+                                change = d.properties.data.previousCases - d.properties.data.currentCases  
+                                if(change > 0) return "#00ff62"
+                                else if (change < 0) return "#0059ff"
+                                else return "#84dd22"
+                            })
+                            .style("stroke","black")
+                    
+                    d3.selectAll("path.countries")
+                        .on("mouseover", countryData)
+                    
+                    function countryData(d){
+                        createBarPlot(d)
+                    }
+                }
+                d3.csv("nasa.csv", function(data){
+
+                    var totalCurrCases = d3.sum(data, function(d){return d.currentCases})
+                    var totalPrevCases = d3.sum(data, function(d){return d.previousCases})
+                    
+                    d3.select("svg")
+                        .selectAll("g")
+                        .data(["Cases during current week: ","Cases during previous week:"])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x",1020)
+                            .attr("y",(d,i)=>(1+i)*20)                           
+                            
+                    d3.select("svg")
+                        .selectAll("g")
+                        .data([totalCurrCases,totalPrevCases])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x",(d,i)=>1200+i*7)
+                            .attr("y",(d,i)=>(1+i)*20.5)
+
+                    //Sorts the data from smallest to largest with resepect to the number of Cases in the last 7 days per 1 million population
+                    casesSmall = data.sort(function(a,b){
+                        return d3.descending(+a.currentCasesPop, +b.currentCasesPop);
+                    })
+                        
+                    //Displays the values for the country with the smallest cases/million people
+                    d3.select("svg")
+                        .selectAll("g")
+                        .data(["Bottom Five Countries With Lowest Case Count/1M Population",casesSmall[0].country,casesSmall[1].country,casesSmall[2].country,casesSmall[3].country,casesSmall[4].country])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x",1020)
+                            .attr("y",(d,i)=>(2+i)*50)                           
+                            
+                    d3.select("svg")
+                        .selectAll("g")
+                        .data([casesSmall[0].currentCasesPop,casesSmall[1].currentCasesPop,casesSmall[2].currentCasesPop,casesSmall[3].currentCasesPop,casesSmall[4].currentCasesPop])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x", 1180)
+                            .attr("y",(d,i)=>(3+i)*50)
+
+                    //Sorts the data from largest to smallest with resepect to the number of Cases in the last 7 days per 1 million population
+                    casesLarge = data.sort(function(a,b){
+                        return d3.ascending(+a.currentCasesPop, +b.currentCasesPop);
+                    })  
+                    d3.select("svg")
+                        .selectAll("g")
+                        .data(["Top Five Countries With Lowest Case Count/1M Population",casesLarge[4].country,casesLarge[3].country,casesLarge[2].country,casesLarge[1].country,casesLarge[0].country])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x",1480)
+                            .attr("y",(d,i)=>(2+i)*50)                           
+                            
+                    d3.select("svg")
+                        .selectAll("g")
+                        .data([casesLarge[4].currentCasesPop,casesLarge[3].currentCasesPop,casesLarge[2].currentCasesPop,casesLarge[1].currentCasesPop,casesLarge[0].currentCasesPop])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x", 1640)
+                            .attr("y",(d,i)=>(3+i)*50)
+                    
+                })
+            }
+
+            
+            //Displays only North America
+              function North(){
+                d3.select("svg").selectAll("*").remove()//removes all elements from svg
+                
+                var PromiseWrapper = (xhr, d) => new Promise(resolve => xhr(d, (p) => resolve(p)));
+
+                Promise
+                    .all([
+                        PromiseWrapper(d3.json,"NA.geojson"),
+                        PromiseWrapper(d3.csv,"northAmerica.csv")
+                    ])
+                    .then(resolve=>{
+                        createMap(resolve[0],resolve[1]);
+                    });
+                    function createMap(countries, naData){
+                    var Projection = d3.geoMercator()
+                        .scale(300)
+                        .translate([1000,900])
+                    
+                    var geoPath = d3.geoPath().projection(Projection)
+
+                    //Legend, creates rectangles fills them with colour and aligns a text that corresponds to what that colour represents
+                    var variable = d3.select("svg")
+                        .selectAll("spots")
+                        .data(["# of cases has decreased","# of cases has increased", "# of cases is the same"])
+                        .enter()
+                        .append("g")
+                    
+                    variable.append("text")
+                        .text((d,i)=>d)
+                        .attr("x",50)
+                        .attr("y",(d,i)=>(1+i)*20)
+
+                    variable.append("rect")
+                        .attr("x", 30)
+                        .attr("y", (d,i)=>(0.5+i)*20)
+                        .attr("width", 10)
+                        .attr("height",10)
+                        .style("fill",(d,i)=>{
+                            if(i == 0) return "#00ff62"
+                            else if(i == 1) return "#0059ff"
+                            else return "#ff0000"
+                        })
+                        .style("stroke","black")
+                    
+                    //Binding the data, finding the admin name from the geoJson file and setting it equal to the country with the same name in the csv file
+                    const parts = countries.features
+                    parts.forEach(geoJsonObject => {
+                        const linkedData = naData.find(d => d.country === geoJsonObject.properties.admin)
+                        geoJsonObject.properties.data = linkedData
+                    })
+
+                    //drawing the countries and colouring accodring to the chnage in covid cases
+                    d3.select("svg").selectAll("path").data(parts)
+                        .enter()
+                        .append("path")
+                            .attr("d",geoPath)
+                            .attr("class", "countries")
+                            .style("stroke","black")
+                            .style("fill", function(d){
+                                change = d.properties.data.previousCases - d.properties.data.currentCases
+                                if(change > 0) return "#00ff62"
+                                else if (change < 0) return "#0059ff"
+                                else return "#ff0000"
+                                
+                            })
+                      
+                   
+                }
+                d3.csv("northAmerica.csv", function(data){
+
+                    var totalCurrCases = d3.sum(data, function(d){return d.currentCases})
+                    var totalPrevCases = d3.sum(data, function(d){return d.previousCases})
+                    
+                    d3.select("svg")
+                        .selectAll("g")
+                        .data(["Cases during current week: ","Cases during previous week:"])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x",1020)
+                            .attr("y",(d,i)=>(1+i)*20)                           
+                            
+                    d3.select("svg")
+                        .selectAll("g")
+                        .data([totalCurrCases,totalPrevCases])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x",(d,i)=>1200+i*7)
+                            .attr("y",(d,i)=>(1+i)*20.5)
+
+                    //Sorts the data from smallest to largest with resepect to the number of Cases in the last 7 days per 1 million population
+                    casesSmall = data.sort(function(a,b){
+                        return d3.descending(+a.currentCasesPop, +b.currentCasesPop);
+                    })
+                        
+                    //Displays the values for the country with the smallest cases/million people
+                    d3.select("svg")
+                        .selectAll("g")
+                        .data(["Bottom Five Countries With Lowest Case Count/1M Population",casesSmall[0].country,casesSmall[1].country,casesSmall[2].country,casesSmall[3].country,casesSmall[4].country])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x",1020)
+                            .attr("y",(d,i)=>(2+i)*50)                           
+                            
+                    d3.select("svg")
+                        .selectAll("g")
+                        .data([casesSmall[0].currentCasesPop,casesSmall[1].currentCasesPop,casesSmall[2].currentCasesPop,casesSmall[3].currentCasesPop,casesSmall[4].currentCasesPop])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x", 1180)
+                            .attr("y",(d,i)=>(3+i)*50)
+
+                    //Sorts the data from largest to smallest with resepect to the number of Cases in the last 7 days per 1 million population
+                    casesLarge = data.sort(function(a,b){
+                        return d3.ascending(+a.currentCasesPop, +b.currentCasesPop);
+                    })  
+                    d3.select("svg")
+                        .selectAll("g")
+                        .data(["Top Five Countries With Lowest Case Count/1M Population",casesLarge[4].country,casesLarge[3].country,casesLarge[2].country,casesLarge[1].country,casesLarge[0].country])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x",1480)
+                            .attr("y",(d,i)=>(2+i)*50)                           
+                            
+                    d3.select("svg")
+                        .selectAll("g")
+                        .data([casesLarge[4].currentCasesPop,casesLarge[3].currentCasesPop,casesLarge[2].currentCasesPop,casesLarge[1].currentCasesPop,casesLarge[0].currentCasesPop])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x", 1640)
+                            .attr("y",(d,i)=>(3+i)*50)
+                    
+       
+
+                  
+                })
+            }
+
+            //Displays only South America
+            function South(){
+                d3.select("svg").selectAll("*").remove()//removes all elements from svg
+                // d3.json("NA.geojson", function (countries){ //countries is the dataset
+                var PromiseWrapper = (xhr, d) => new Promise(resolve => xhr(d, (p) => resolve(p)));
+
+                Promise
+                    .all([
+                        PromiseWrapper(d3.json,"sA.geojson"),
+                        PromiseWrapper(d3.csv,"southAmerica.csv")
+                    ])
+                    .then(resolve=>{
+                        createMap(resolve[0],resolve[1]);
+                    });
+                    function createMap(countries, saData){
+                    var Projection = d3.geoMercator()
+                        .scale(500)
+                        .translate([1000,200])
+                    
+                    var geoPath = d3.geoPath().projection(Projection)
+                  
+                    var variable = d3.select("svg")
+                        .selectAll("spots")
+                        .data(["# of cases has decreased","# of cases has increased", "# of cases is the same"])
+                        .enter()
+                        .append("g")
+                    
+                    variable.append("text")
+                        .text((d,i)=>d)
+                        .attr("x",50)
+                        .attr("y",(d,i)=>(1+i)*20)
+
+                    variable.append("rect")
+                        .attr("x", 30)
+                        .attr("y", (d,i)=>(0.5+i)*20)
+                        .attr("width", 10)
+                        .attr("height",10)
+                        .style("fill",(d,i)=>{
+                            if(i == 0) return "#00ff62"
+                            else if(i == 1) return "#0059ff"
+                            else return "#ff0000"
+                        })
+                        .style("stroke","black")
+
+                    const parts = countries.features
+                    parts.forEach(geoJsonObject => {
+                        const linkedData = saData.find(d => d.country === geoJsonObject.properties.admin)
+                        geoJsonObject.properties.data = linkedData
+                        console.log(linkedData)
+                    })
+                   
+                    d3.select("svg").selectAll("path").data(parts)
+                        .enter()
+                        .append("path")
+                            .attr("d", geoPath)
+                            .attr("class", "countries")
+                            .style("fill", function(d){
+                                change = d.properties.data.previousCases - d.properties.data.currentCases  
+                                if(change > 0) return "#00ff62"
+                                else if (change < 0) return "#0059ff"
+                                else return "#84dd22"
+                            })
+                            .style("stroke","black")
+
+                   
+                }
+                d3.csv("southAmerica.csv", function(data){
+
+                    var totalCurrCases = d3.sum(data, function(d){return d.currentCases})
+                    var totalPrevCases = d3.sum(data, function(d){return d.previousCases})
+                    
+                    d3.select("svg")
+                        .selectAll("g")
+                        .data(["Cases during current week: ","Cases during previous week:"])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x",1020)
+                            .attr("y",(d,i)=>(1+i)*20)                           
+                            
+                    d3.select("svg")
+                        .selectAll("g")
+                        .data([totalCurrCases,totalPrevCases])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x",(d,i)=>1200+i*7)
+                            .attr("y",(d,i)=>(1+i)*20.5)
+
+                    //Sorts the data from smallest to largest with resepect to the number of Cases in the last 7 days per 1 million population
+                    casesSmall = data.sort(function(a,b){
+                        return d3.descending(+a.currentCasesPop, +b.currentCasesPop);
+                    })
+                        
+                    //Displays the values for the country with the smallest cases/million people
+                    d3.select("svg")
+                        .selectAll("g")
+                        .data(["Bottom Five Countries With Lowest Case Count/1M Population",casesSmall[0].country,casesSmall[1].country,casesSmall[2].country,casesSmall[3].country,casesSmall[4].country])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x",1020)
+                            .attr("y",(d,i)=>(2+i)*50)                           
+                            
+                    d3.select("svg")
+                        .selectAll("g")
+                        .data([casesSmall[0].currentCasesPop,casesSmall[1].currentCasesPop,casesSmall[2].currentCasesPop,casesSmall[3].currentCasesPop,casesSmall[4].currentCasesPop])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x", 1180)
+                            .attr("y",(d,i)=>(3+i)*50)
+
+                    //Sorts the data from largest to smallest with resepect to the number of Cases in the last 7 days per 1 million population
+                    casesLarge = data.sort(function(a,b){
+                        return d3.ascending(+a.currentCasesPop, +b.currentCasesPop);
+                    })  
+                    d3.select("svg")
+                        .selectAll("g")
+                        .data(["Top Five Countries With Lowest Case Count/1M Population",casesLarge[4].country,casesLarge[3].country,casesLarge[2].country,casesLarge[1].country,casesLarge[0].country])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x",1480)
+                            .attr("y",(d,i)=>(2+i)*50)                           
+                            
+                    d3.select("svg")
+                        .selectAll("g")
+                        .data([casesLarge[4].currentCasesPop,casesLarge[3].currentCasesPop,casesLarge[2].currentCasesPop,casesLarge[1].currentCasesPop,casesLarge[0].currentCasesPop])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x", 1640)
+                            .attr("y",(d,i)=>(3+i)*50)
+                    
+                })
+            }
+
+            
+          
+        </script>
+
+        <button onclick="Americas()">Americas</button>
+        <button onclick="North()">North America</button>
+        <button onclick="South()">South America</button>
+        <button onclick="remove()">Done</button>
+        <!-- create 3 buttons, one to show NA, one for SA and one for both, intially start with both maybe -->
+    </body>
+    
+
+</html>
