@@ -12,6 +12,14 @@
             Americas()
             function createBarPlot(d){   
                 d3.select("#xAxisG").remove()
+                d3.selectAll("rect").remove()//d3.select("#bars").remove() doesnt work
+                d3.select("#txt").remove()//doesnt work
+                d3.select("#title").remove()
+                d3.select("svg").append("text")
+                    .text(d.properties.name)
+                    .attr("x",1350)
+                    .attr("y",450)
+                    .attr("id","title")
 
                 var xScale = d3.scaleLinear()
                     .range([0,700])
@@ -22,12 +30,12 @@
                     .attr("id","xAxisG").call(xAxis)
                     .attr("transform","translate(1170,550)")
                 
+                
                 placeBars()
 
                 //Function to place all bars
                 function placeBars(){
-                    d3.select("#txt").remove()
-                    var data = [10,30,30,d.properties.data.previousCases,d.properties.data.currentCases]
+                    var data = [d.properties.data.previousCases,d.properties.data.currentCases]
 
                     d3.select("svg")
                         .selectAll("rect")
@@ -39,24 +47,22 @@
                             .attr("height", 17)
                             .attr("width", (d,i)=>xScale(d))
                             .attr("x", 1170)
-                            .attr("y",(d,i)=>(13.55+i)*30)
+                            .attr("y",(d,i)=>(14.1+i)*35)
                             .style("fill","pink")
 
                     var variable = d3.select("svg")
                         .selectAll("spots")
                         .data(["# of Cases Last Week", "# of Cases This Week"])
                         .enter()
-                        .append("text")
-                            .attr("id", "txt")
-                            .text((d,i)=>d)
-                            .attr("x",1020)
-                            .attr("y",(d,i)=>(17+i)*30)
-                    
+
+                    variable.append("text")
+                        .text((d,i)=>d)
+                        .attr("x",1020)
+                        .attr("y",(d,i)=>(17+i)*30)
+                        .attr("id", "txt")
+    
                 }
                 
-            }
-            function remove(){
-                d3.select("svg").select("#bars").remove
             }
             //Displays both North and South America
             function Americas(){
@@ -89,11 +95,10 @@
                         .attr("x",50)
                         .attr("y",(d,i)=>(1+i)*20)
 
-                    variable.append("rect")
-                        .attr("x", 30)
-                        .attr("y", (d,i)=>(0.5+i)*20)
-                        .attr("width", 10)
-                        .attr("height",10)
+                    variable.append("circle")
+                        .attr("cx", 30)
+                        .attr("cy", (d,i)=>(.75+i)*20)
+                        .attr("r",5)
                         .style("fill",(d,i)=>{
                             if(i == 0) return "#00ff62"
                             else if(i == 1) return "#0059ff"
@@ -118,11 +123,12 @@
                                 else return "#84dd22"
                             })
                             .style("stroke","black")
-                    
+
                     d3.selectAll("path.countries")
                         .on("mouseover", countryData)
-                    
+                            
                     function countryData(d){
+                        
                         createBarPlot(d)
                     }
                 }
@@ -488,7 +494,6 @@
         <button onclick="Americas()">Americas</button>
         <button onclick="North()">North America</button>
         <button onclick="South()">South America</button>
-        <button onclick="remove()">Done</button>
         <!-- create 3 buttons, one to show NA, one for SA and one for both, intially start with both maybe -->
     </body>
     
