@@ -17,6 +17,11 @@
                 d3.select("#tCases").remove()
                 d3.select("#xAxisD").remove()
                 d3.select("#deaths").remove()
+                d3.select("#caseTitle").remove()
+                d3.select("#deathTitle").remove()
+                d3.select("#pop").remove()
+                d3.select("#wcc").remove()
+                d3.select("#wdc").remove()
 
                 d3.select("svg").append("text")
                     .text(d.properties.name)
@@ -24,15 +29,25 @@
                     .attr("y",450)
                     .attr("id","title")
                     .attr("font-weight", 700)
-                    .style("font-size", "22px")
+                    .style("font-size", "30px")
 
-                cases()
+                d3.select("svg").append("text")
+                    .text("Population: "+d.properties.data.population)
+                    .attr("x",1170)
+                    .attr("y",470)
+                    .attr("id","pop")
+
+                barChart()
                 caseChanges()
+                deathChanges()
        
-                function cases(){
+                function barChart(){
                     d3.select("#xAxisG").remove()
                     d3.select("#tCases").remove()
                     d3.select("#deaths").remove()
+                    d3.select("#caseTitle").remove()
+                    d3.select("#deathTitle").remove()
+
                     var data = [d.properties.data.previousCases,d.properties.data.currentCases,d.properties.data.previousDeaths,d.properties.data.currentDeaths]
 
                     var scaleC = d3.scaleLinear()
@@ -55,47 +70,88 @@
                                 if(i < 2) return scaleC(d)
                                 else return scaleD(d)
                             })
-                            .attr("x", 900)
+                            .attr("x", 860)
                             .attr("y",(d,i)=>{
-                                if(i < 2) return (14.1+i)*35
-                                else return (15.5+i)*35
+                                if(i < 2) return (16.1+i)*35
+                                else return (19.3+i)*35
                             })
-                            .style("fill","pink")
+                            .style("fill",(d,i)=>{
+                                if(i % 2 == 0) return "#CCCCC4"
+                                else return "pink"
+                            })
                             .style("stroke","black")
-                    
+                        
 
                     var xAxis = d3.axisBottom().scale(scaleC)
                     d3.select("svg").append("g")
                         .attr("id","xAxisG").call(xAxis)
-                        .attr("transform","translate(900,550)")
-
+                        .attr("transform","translate(860,625)")
+                    
                     d3.select("svg")
                         .selectAll("spots")
-                        .data(["# of Cases Last Week", "# of Cases This Week"])
+                        .data(["Previous Week", "Current Week"])
                         .enter()
                         .append("text")
                             .text((d,i)=>d)
                             .attr("x",750)
-                            .attr("y",(d,i)=>(17+i)*30)
+                            .attr("y",(d,i)=>(19.1+i)*30)
                         .attr("id", "tCases")
+
+
+                    d3.select("svg")
+                        .selectAll("spots")
+                        .data(["Number of Cases in "+d.properties.name, "Number of Cases"])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x",(d,i)=>{
+                                if(i==0) return 1140
+                                else return 1170
+                            })
+                            .attr("y",(d,i)=>{
+                                if(i == 0) return 540
+                                else return 670
+                            })
+                            .attr("id","caseTitle")
 
                     var xAxisD = d3.axisBottom().scale(scaleD)
                     d3.select("svg").append("g")
                         .attr("id","xAxisD").call(xAxisD)
-                        .attr("transform","translate(900,670)")
+                        .attr("transform","translate(860,805)")
 
                     d3.select("svg")
                         .selectAll("spots")
-                        .data(["# of Deaths Last Week", "# of Deaths This Week"])
+                        .data(["Previous Week", "Current Week"])
                         .enter()
                         .append("text")
                             .text((d,i)=>d)
                             .attr("x",750)
-                            .attr("y",(d,i)=>(21+i)*30)
+                            .attr("y",(d,i)=>(25.4+i)*30)
                         .attr("id", "deaths")
+
+                    d3.select("svg")
+                        .selectAll("spots")
+                        .data(["Number of Deaths in "+d.properties.name, "Number of Deaths"])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x",(d,i)=>{
+                                if(i==0) return 1140
+                                else return 1170
+                            })
+                            .attr("y",(d,i)=>{
+                                if(i == 0) return 740
+                                else return 845
+                            })
+                            .attr("id","deathTitle")
     
                 }
                 function caseChanges(){
+                    d3.select("svg").append("text")
+                        .text("Weekly Case Change")
+                        .attr("x",1680)
+                        .attr("y",510)
+                        .attr("id","wcc")
                     var pieChart = d3.pie()
                     var yourPie = pieChart([1,(Math.abs(d.properties.data.changePercentage))])
                     var newArc = d3.arc();
@@ -103,11 +159,11 @@
                         .outerRadius(70)
 
                     var fillScale = d3.scaleOrdinal()
-                        .range(["grey", "#cf7c1c","red"])
+                        .range(["#CCCCC4", "#97F2F3"])
 
                     var pie = d3.select("svg")
                         .append("g")
-                        .attr("transform","translate(1250,250)")
+                        .attr("transform","translate(1750,600)")
                         .selectAll("path")
                         .data(yourPie)
                         .enter()
@@ -124,44 +180,40 @@
                         .style("font-size", "20px")
                         .attr("y",10)
                 }
-                function deaths(){
-                    d3.select("#xAxisD").remove()
-                    d3.select("#deaths").remove()
-                    // var data = [d.properties.data.previousDeaths,d.properties.data.currentDeaths]
-                    
-                    var scaleD = d3.scaleLinear()
-                        .range([0,700])
-                        .domain([0,10000])
+                function deathChanges(){
+                    d3.select("svg").append("text")
+                        .text("Weekly Death Change")
+                        .attr("x",1680)
+                        .attr("y",730)
+                        .attr("id","wdc")
 
-                    d3.select("svg")
-                        .selectAll("rect")
-                        .data([d.properties.data.previousDeaths,d.properties.data.currentDeaths])
-                        .enter()
+                    var pieChart = d3.pie()
+                    var yourPie = pieChart([1,(Math.abs(d.properties.data.deathChange))])
+                    var newArc = d3.arc();
+                    newArc.innerRadius(0)
+                        .outerRadius(70)
+
+                    var fillScale = d3.scaleOrdinal()
+                        .range(["#CCCCC4", "#cba8df"])
+
+                    var pie = d3.select("svg")
                         .append("g")
-                        .append("rect")
-                            // .attr("id","dBars")
-                            .attr("height", 17)
-                            .attr("width", (d,i)=>scaleD(d))
-                            .attr("x", 900)
-                            .attr("y",(d,i)=>(18.1+i)*35)
-                            .style("fill","pink")
-                            .style("stroke","black")
-
-                var xAxisD = d3.axisBottom().scale(scaleD)
-                d3.select("svg").append("g")
-                    .attr("id","xAxisD").call(xAxisD)
-                    .attr("transform","translate(900,670)")
-
-                    d3.select("svg")
-                        .selectAll("spots")
-                        .data(["# of Deaths Last Week", "# of Deaths This Week"])
+                        .attr("transform","translate(1750,820)")
+                        .selectAll("path")
+                        .data(yourPie)
                         .enter()
-                        .append("text")
-                            .text((d,i)=>d)
-                            .attr("x",750)
-                            .attr("y",(d,i)=>(21+i)*30)
-                        .attr("id", "deaths")
-    
+                        
+                    pie.append("path")
+                        .attr("d", newArc)
+                        .style("fill", (d,i) => fillScale(i))
+                        .style("stroke", "black")
+                        .style("stroke-width", "2px")
+                        .attr("id","pieChart");
+
+                    pie.append("text")
+                        .text(d.properties.data.deathChange)
+                        .style("font-size", "20px")
+                        .attr("y",10)
                 }
                 
             }
@@ -202,9 +254,9 @@
                         .attr("cy", (d,i)=>(.75+i)*20)
                         .attr("r",5)
                         .style("fill",(d,i)=>{
-                            if(i == 0) return "#00ff62"
-                            else if(i == 1) return "#0059ff"
-                            else return "#ff0000"
+                            if(i == 0) return "#a0d777"
+                            else if(i == 1) return "#6994cb"
+                            else return "#db6c76"
                         })
                         .style("stroke","black")
 
@@ -220,9 +272,9 @@
                             .attr("class", "countries")
                             .style("fill", function(d){
                                 change = d.properties.data.previousCases - d.properties.data.currentCases  
-                                if(change > 0) return "#00ff62"
-                                else if (change < 0) return "#0059ff"
-                                else return "#84dd22"
+                                if(change > 0) return "#a0d777"
+                                else if (change < 0) return "#6994cb"
+                                else return "#db6c76"
                             })
                             .style("stroke","black")
 
@@ -340,15 +392,14 @@
                         .attr("x",50)
                         .attr("y",(d,i)=>(1+i)*20)
 
-                    variable.append("rect")
-                        .attr("x", 30)
-                        .attr("y", (d,i)=>(0.5+i)*20)
-                        .attr("width", 10)
-                        .attr("height",10)
+                    variable.append("circle")
+                        .attr("cx", 30)
+                        .attr("cy", (d,i)=>(.75+i)*20)
+                        .attr("r",5)
                         .style("fill",(d,i)=>{
-                            if(i == 0) return "#00ff62"
-                            else if(i == 1) return "#0059ff"
-                            else return "#ff0000"
+                            if(i == 0) return "#a0d777"
+                            else if(i == 1) return "#6994cb"
+                            else return "#db6c76"
                         })
                         .style("stroke","black")
                     
@@ -368,9 +419,9 @@
                             .style("stroke","black")
                             .style("fill", function(d){
                                 change = d.properties.data.previousCases - d.properties.data.currentCases
-                                if(change > 0) return "#00ff62"
-                                else if (change < 0) return "#0059ff"
-                                else return "#ff0000"
+                                if(change > 0) return "#a0d777"
+                                else if (change < 0) return "#6994cb"
+                                else return "#db6c76"
                                 
                             })
                       
@@ -444,10 +495,7 @@
                             .text((d,i)=>d)
                             .attr("x", 1640)
                             .attr("y",(d,i)=>(3+i)*50)
-                    
-       
-
-                  
+  
                 })
             }
 
@@ -483,17 +531,17 @@
                         .attr("x",50)
                         .attr("y",(d,i)=>(1+i)*20)
 
-                    variable.append("rect")
-                        .attr("x", 30)
-                        .attr("y", (d,i)=>(0.5+i)*20)
-                        .attr("width", 10)
-                        .attr("height",10)
+                    variable.append("circle")
+                        .attr("cx", 30)
+                        .attr("cy", (d,i)=>(.75+i)*20)
+                        .attr("r",5)
                         .style("fill",(d,i)=>{
-                            if(i == 0) return "#00ff62"
-                            else if(i == 1) return "#0059ff"
-                            else return "#ff0000"
+                            if(i == 0) return "#a0d777"
+                            else if(i == 1) return "#6994cb"
+                            else return "#db6c76"
                         })
                         .style("stroke","black")
+                    
 
                     const parts = countries.features
                     parts.forEach(geoJsonObject => {
@@ -509,9 +557,9 @@
                             .attr("class", "countries")
                             .style("fill", function(d){
                                 change = d.properties.data.previousCases - d.properties.data.currentCases  
-                                if(change > 0) return "#00ff62"
-                                else if (change < 0) return "#0059ff"
-                                else return "#84dd22"
+                                if(change > 0) return "#a0d777"
+                                else if (change < 0) return "#6994cb"
+                                else return "#db6c76"
                             })
                             .style("stroke","black")
 
