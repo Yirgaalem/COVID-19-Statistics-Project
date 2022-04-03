@@ -13,29 +13,35 @@
             function createBarPlot(d){   
                 d3.select("#xAxisG").remove()
                 d3.selectAll("rect").remove()//d3.select("#bars").remove() doesnt work
-                d3.select("#txt").remove()//doesnt work
                 d3.select("#title").remove()
+                d3.select("#tCases").remove()
+                d3.select("#xAxisD").remove()
+                d3.select("#deaths").remove()
+
                 d3.select("svg").append("text")
                     .text(d.properties.name)
-                    .attr("x",1350)
+                    .attr("x",1170)
                     .attr("y",450)
                     .attr("id","title")
+                    .attr("font-weight", 700)
+                    .style("font-size", "22px")
 
-                var xScale = d3.scaleLinear()
-                    .range([0,700])
-                    .domain([0,350000])
+                cases()
+                caseChanges()
+       
+                function cases(){
+                    d3.select("#xAxisG").remove()
+                    d3.select("#tCases").remove()
+                    d3.select("#deaths").remove()
+                    var data = [d.properties.data.previousCases,d.properties.data.currentCases,d.properties.data.previousDeaths,d.properties.data.currentDeaths]
 
-                var xAxis = d3.axisBottom().scale(xScale)
-                d3.select("svg").append("g")
-                    .attr("id","xAxisG").call(xAxis)
-                    .attr("transform","translate(1170,550)")
-                
-                
-                placeBars()
+                    var scaleC = d3.scaleLinear()
+                        .range([0,700])
+                        .domain([0,350000])
 
-                //Function to place all bars
-                function placeBars(){
-                    var data = [d.properties.data.previousCases,d.properties.data.currentCases]
+                    var scaleD = d3.scaleLinear()
+                        .range([0,700])
+                        .domain([0,10000])
 
                     d3.select("svg")
                         .selectAll("rect")
@@ -43,27 +49,123 @@
                         .enter()
                         .append("g")
                         .append("rect")
-                            .attr("id","bars")
+                            // .attr("id","bars")
                             .attr("height", 17)
-                            .attr("width", (d,i)=>xScale(d))
-                            .attr("x", 1170)
-                            .attr("y",(d,i)=>(14.1+i)*35)
+                            .attr("width", (d,i)=>{
+                                if(i < 2) return scaleC(d)
+                                else return scaleD(d)
+                            })
+                            .attr("x", 900)
+                            .attr("y",(d,i)=>{
+                                if(i < 2) return (14.1+i)*35
+                                else return (15.5+i)*35
+                            })
                             .style("fill","pink")
+                            .style("stroke","black")
+                    
 
-                    var variable = d3.select("svg")
+                    var xAxis = d3.axisBottom().scale(scaleC)
+                    d3.select("svg").append("g")
+                        .attr("id","xAxisG").call(xAxis)
+                        .attr("transform","translate(900,550)")
+
+                    d3.select("svg")
                         .selectAll("spots")
                         .data(["# of Cases Last Week", "# of Cases This Week"])
                         .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x",750)
+                            .attr("y",(d,i)=>(17+i)*30)
+                        .attr("id", "tCases")
 
-                    variable.append("text")
-                        .text((d,i)=>d)
-                        .attr("x",1020)
-                        .attr("y",(d,i)=>(17+i)*30)
-                        .attr("id", "txt")
+                    var xAxisD = d3.axisBottom().scale(scaleD)
+                    d3.select("svg").append("g")
+                        .attr("id","xAxisD").call(xAxisD)
+                        .attr("transform","translate(900,670)")
+
+                    d3.select("svg")
+                        .selectAll("spots")
+                        .data(["# of Deaths Last Week", "# of Deaths This Week"])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x",750)
+                            .attr("y",(d,i)=>(21+i)*30)
+                        .attr("id", "deaths")
+    
+                }
+                function caseChanges(){
+                    var pieChart = d3.pie()
+                    var yourPie = pieChart([1,(Math.abs(d.properties.data.changePercentage))])
+                    var newArc = d3.arc();
+                    newArc.innerRadius(0)
+                        .outerRadius(70)
+
+                    var fillScale = d3.scaleOrdinal()
+                        .range(["grey", "#cf7c1c","red"])
+
+                    var pie = d3.select("svg")
+                        .append("g")
+                        .attr("transform","translate(1250,250)")
+                        .selectAll("path")
+                        .data(yourPie)
+                        .enter()
+                        
+                    pie.append("path")
+                        .attr("d", newArc)
+                        .style("fill", (d,i) => fillScale(i))
+                        .style("stroke", "black")
+                        .style("stroke-width", "2px")
+                        .attr("id","pieChart");
+
+                    pie.append("text")
+                        .text(d.properties.data.changePercentage)
+                        .style("font-size", "20px")
+                        .attr("y",10)
+                }
+                function deaths(){
+                    d3.select("#xAxisD").remove()
+                    d3.select("#deaths").remove()
+                    // var data = [d.properties.data.previousDeaths,d.properties.data.currentDeaths]
+                    
+                    var scaleD = d3.scaleLinear()
+                        .range([0,700])
+                        .domain([0,10000])
+
+                    d3.select("svg")
+                        .selectAll("rect")
+                        .data([d.properties.data.previousDeaths,d.properties.data.currentDeaths])
+                        .enter()
+                        .append("g")
+                        .append("rect")
+                            // .attr("id","dBars")
+                            .attr("height", 17)
+                            .attr("width", (d,i)=>scaleD(d))
+                            .attr("x", 900)
+                            .attr("y",(d,i)=>(18.1+i)*35)
+                            .style("fill","pink")
+                            .style("stroke","black")
+
+                var xAxisD = d3.axisBottom().scale(scaleD)
+                d3.select("svg").append("g")
+                    .attr("id","xAxisD").call(xAxisD)
+                    .attr("transform","translate(900,670)")
+
+                    d3.select("svg")
+                        .selectAll("spots")
+                        .data(["# of Deaths Last Week", "# of Deaths This Week"])
+                        .enter()
+                        .append("text")
+                            .text((d,i)=>d)
+                            .attr("x",750)
+                            .attr("y",(d,i)=>(21+i)*30)
+                        .attr("id", "deaths")
     
                 }
                 
             }
+
             //Displays both North and South America
             function Americas(){
                 d3.select("svg").selectAll("*").remove()//removes all elements from svg
@@ -143,7 +245,7 @@
                         .enter()
                         .append("text")
                             .text((d,i)=>d)
-                            .attr("x",1020)
+                            .attr("x", 750)
                             .attr("y",(d,i)=>(1+i)*20)                           
                             
                     d3.select("svg")
@@ -152,7 +254,7 @@
                         .enter()
                         .append("text")
                             .text((d,i)=>d)
-                            .attr("x",(d,i)=>1200+i*7)
+                            .attr("x",(d,i)=>940+i*7)
                             .attr("y",(d,i)=>(1+i)*20.5)
 
                     //Sorts the data from smallest to largest with resepect to the number of Cases in the last 7 days per 1 million population
@@ -167,7 +269,7 @@
                         .enter()
                         .append("text")
                             .text((d,i)=>d)
-                            .attr("x",1020)
+                            .attr("x",750)
                             .attr("y",(d,i)=>(2+i)*50)                           
                             
                     d3.select("svg")
@@ -176,7 +278,7 @@
                         .enter()
                         .append("text")
                             .text((d,i)=>d)
-                            .attr("x", 1180)
+                            .attr("x", 910)
                             .attr("y",(d,i)=>(3+i)*50)
 
                     //Sorts the data from largest to smallest with resepect to the number of Cases in the last 7 days per 1 million population
@@ -189,7 +291,7 @@
                         .enter()
                         .append("text")
                             .text((d,i)=>d)
-                            .attr("x",1480)
+                            .attr("x",1200)
                             .attr("y",(d,i)=>(2+i)*50)                           
                             
                     d3.select("svg")
@@ -198,7 +300,7 @@
                         .enter()
                         .append("text")
                             .text((d,i)=>d)
-                            .attr("x", 1640)
+                            .attr("x", 1360)
                             .attr("y",(d,i)=>(3+i)*50)
                     
                 })
