@@ -7,10 +7,10 @@
         <title>Project</title>
     </head>
     <body>
-        <svg style="width:2100px; height:900px"></svg>
+        <svg style="width:2100px; height:891px"></svg>
         <script>
             Americas()
-            function createBarPlot(d){   
+            function displayData(d){   
                 d3.select("#xAxisG").remove()
                 d3.selectAll("rect").remove()//d3.select("#bars").remove() doesnt work
                 d3.select("#title").remove()
@@ -22,6 +22,9 @@
                 d3.select("#pop").remove()
                 d3.select("#wcc").remove()
                 d3.select("#wdc").remove()
+                d3.select("#casesPop").remove()
+                d3.select("#deathPop").remove()
+
 
                 d3.select("svg").append("text")
                     .text(d.properties.name)
@@ -47,6 +50,19 @@
                     d3.select("#deaths").remove()
                     d3.select("#caseTitle").remove()
                     d3.select("#deathTitle").remove()
+                    d3.select("#casesPop").remove()
+                    d3.select("#deathPop").remove()
+
+                    d3.select("svg").append("text")
+                        .text("Cases in the last 7 days/1M pop: "+d.properties.data.currentCasesPop)
+                        .attr("x",750)
+                        .attr('y',500)
+                        .attr("id","casesPop")
+                    d3.select("svg").append("text")
+                        .text("Deaths in the last 7 days/1M pop: "+d.properties.data.deathPop)
+                        .attr("x",750)
+                        .attr('y',520)
+                        .attr("id","deathPop")
 
                     var data = [d.properties.data.previousCases,d.properties.data.currentCases,d.properties.data.previousDeaths,d.properties.data.currentDeaths]
 
@@ -279,12 +295,9 @@
                             .style("stroke","black")
 
                     d3.selectAll("path.countries")
-                        .on("mouseover", countryData)
+                        .on("mouseover", displayData)
                             
-                    function countryData(d){
-                        
-                        createBarPlot(d)
-                    }
+                  
                 }
                 d3.csv("nasa.csv", function(data){
 
@@ -424,7 +437,8 @@
                                 else return "#db6c76"
                                 
                             })
-                      
+                    d3.selectAll("path.countries")
+                        .on("mouseover", displayData)
                    
                 }
                 d3.csv("northAmerica.csv", function(data){
@@ -563,7 +577,8 @@
                             })
                             .style("stroke","black")
 
-                   
+                    d3.selectAll("path.countries")
+                        .on("mouseover", displayData)
                 }
                 d3.csv("southAmerica.csv", function(data){
 
