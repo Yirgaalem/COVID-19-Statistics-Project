@@ -169,7 +169,7 @@
                         .attr("y",510)
                         .attr("id","wcc")
                     var pieChart = d3.pie()
-                    var yourPie = pieChart([1,(Math.abs(d.properties.data.changePercentage))])
+                    var yourPie = pieChart([100-Math.abs(d.properties.data.changePercentage),(Math.abs(d.properties.data.changePercentage))])
                     var newArc = d3.arc();
                     newArc.innerRadius(0)
                         .outerRadius(70)
@@ -204,7 +204,7 @@
                         .attr("id","wdc")
 
                     var pieChart = d3.pie()
-                    var yourPie = pieChart([1,(Math.abs(d.properties.data.deathChange))])
+                    var yourPie = pieChart([100-Math.abs(d.properties.data.deathChange),(Math.abs(d.properties.data.deathChange))])
                     var newArc = d3.arc();
                     newArc.innerRadius(0)
                         .outerRadius(70)
